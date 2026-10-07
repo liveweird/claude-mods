@@ -1,0 +1,7 @@
+{
+  "name": "turn-limits",
+  "version": "0.1.0",
+  "description": "Counts, per agent type, the agent invocations of this session that stopped at their turn limit",
+  "author": { "name": "Sebastian Gebski" },
+  "types": "./types/index.d.ts"
+}

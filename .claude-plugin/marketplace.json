@@ -1,0 +1,9 @@
+{
+  "name": "sebastian-mods",
+  "description": "Sebastian's Claude Code mods",
+  "owner": { "name": "Sebastian Gebski" },
+  "plugins": [
+    { "name": "plan-progress", "source": "./plan-progress" },
+    { "name": "turn-limits", "source": "./turn-limits" }
+  ]
+}
