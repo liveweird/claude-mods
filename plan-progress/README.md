@@ -17,10 +17,10 @@ elapsed 1h12m · step 8m of ~15m · ~45m left · ETA 14:32
 At the prompt of a Claude Code terminal session:
 
 ```
-/plugin install plan-progress --marketplace liveweird/plan-progress
+/plugin install plan-progress --marketplace liveweird/claude-mods
 ```
 
-Answer `y` to add the marketplace, then pick the user scope. It is active at once, and in every later session.
+Answer `y` to add the marketplace (once), then pick the user scope. It is active at once, and in every later session.
 
 ## Use
 
