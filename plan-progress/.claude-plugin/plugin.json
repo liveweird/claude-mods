@@ -1,0 +1,9 @@
+{
+  "name": "plan-progress",
+  "version": "0.1.0",
+  "description": "Shows the running plan's current step, elapsed times and estimates as a timeline above the prompt",
+  "types": "./types/index.d.ts",
+  "author": {
+    "name": "Sebastian Gebski"
+  }
+}
