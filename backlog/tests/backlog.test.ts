@@ -13,7 +13,7 @@ const MD = [
   '- [next] **Real-Jira first sync.** Backfill 24 months, then read the profile.',
   '  - [todo] a nested bullet belongs to its parent',
   '',
-  '## Engineering follow-ups',
+  '## Engineering follow-ups (record: `audit-status.md`)',
   '',
   '- [todo] **Data profile: multi-project boards.** A board whose filter spans projects…',
   '- [TODO] Cache the profile query. It is slow at scale.',

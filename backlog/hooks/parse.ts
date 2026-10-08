@@ -7,6 +7,8 @@ export const EMPTY: Backlog = { found: false, items: [], untagged: 0 }
 const BULLET = /^[-*+]\s+(.*)$/
 const TAG = /^\[(next|todo|new|parked|blocked)\]\s*(.*)$/i
 const SECTION = /^##\s+(.*?)\s*#*\s*$/
+/** A heading's trailing parenthetical, `(needs the user)`: dropped from the section name. */
+const ASIDE = /\s*\([^)]*\)\s*$/
 const FENCE = /^\s*(```|~~~)/
 const BOLD = /\*\*(.+?)\*\*/
 const TITLE_MAX = 60
@@ -26,7 +28,7 @@ export function parseBacklog(md: string): Backlog {
     if (fenced) continue
     const heading = SECTION.exec(line)
     if (heading) {
-      section = heading[1]
+      section = (heading[1] ?? '').replace(ASIDE, '')
       continue
     }
     if (section === undefined) continue
