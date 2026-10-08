@@ -1,0 +1,7 @@
+{
+  "name": "backlog",
+  "version": "0.1.0",
+  "description": "A brief view of the repo's BACKLOG.md: what's next, and how many items are to-do, new, parked or blocked",
+  "author": { "name": "Sebastian Gebski" },
+  "types": "./types/index.d.ts"
+}

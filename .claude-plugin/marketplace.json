@@ -4,6 +4,7 @@
   "owner": { "name": "Sebastian Gebski" },
   "plugins": [
     { "name": "plan-progress", "source": "./plan-progress" },
-    { "name": "turn-limits", "source": "./turn-limits" }
+    { "name": "turn-limits", "source": "./turn-limits" },
+    { "name": "backlog", "source": "./backlog" }
   ]
 }
