@@ -85,8 +85,19 @@ function isBacklogFile(path: unknown): boolean {
   return typeof path === 'string' && /(^|[/\\])BACKLOG\.md$/.test(path)
 }
 
+/**
+ * The main checkout's BACKLOG.md. git's common dir is the main checkout's `.git` from a linked worktree too, so a
+ * session working in `.claude/worktrees/<name>` still reads the main file, not the worktree's (older) copy. Outside a
+ * git repo, or in a bare/submodule layout, it falls back to the working directory's file.
+ */
+async function backlogPath($: EngineInterface): Promise<string> {
+  const git = await $.process.run(['git', 'rev-parse', '--path-format=absolute', '--git-common-dir']).catch(() => undefined)
+  const common = git?.exitCode === 0 ? git.stdout.trim() : ''
+  return /[\\/]\.git$/.test(common) ? `${common.slice(0, -'.git'.length)}${FILE}` : FILE
+}
+
 async function refresh($: EngineInterface) {
-  const text = await $.fs.read(FILE).catch(() => undefined)
+  const text = await $.fs.read(await backlogPath($)).catch(() => undefined)
   const parsed = text === undefined ? EMPTY : parseBacklog(text)
   await update($, backlog, () => parsed)
   $.ui.status(statusText(summarize(parsed)))

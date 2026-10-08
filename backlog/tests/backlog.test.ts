@@ -69,8 +69,12 @@ test('the report lists every status with titles and sections', () => {
   expect(reportText(summarize({ found: false, items: [], untagged: 0 }))).toBe('No BACKLOG.md in the working directory.')
 })
 
+const RUN = { stderr: '', isStdoutTruncated: false, isStderrTruncated: false }
+
 test('the status line, the tool and the pane follow BACKLOG.md', async ($, on) => {
   let file: string | undefined = MD
+  // Not a git repo: the working directory's BACKLOG.md.
+  on('process.run', () => ({ value: { ...RUN, exitCode: 128, stdout: '' } }))
   on('fs.read', (_$, e) => {
     return e.path.endsWith('/BACKLOG.md') && file !== undefined ? { value: file } : { deny: 'ENOENT' }
   })
@@ -98,4 +102,29 @@ test('the status line, the tool and the pane follow BACKLOG.md', async ($, on) =
   file = undefined
   await $.prompt.submit({ text: 'again', wait: false, origin: { kind: 'composer' } })
   expect(statuses.at(-1)).toBeUndefined()
+})
+
+test('a session in a linked worktree reads the main checkout\'s BACKLOG.md', async ($, on) => {
+  const read: string[] = []
+  on('process.run', (_$, e) => {
+    expect(e.argv).toEqual(['git', 'rev-parse', '--path-format=absolute', '--git-common-dir'])
+    return { value: { ...RUN, exitCode: 0, stdout: '/repo/.git\n' } }
+  })
+  on('fs.read', (_$, e) => {
+    read.push(e.path)
+    return e.path === '/repo/BACKLOG.md' ? { value: '## A\n- [todo] **Main.**' } : { value: '## A\n- [todo] **Worktree copy.**' }
+  })
+  on('prompt.submit', (_$, e) => ({ text: e.text }))
+  const statuses: (string | undefined)[] = []
+  on('ui.status', (_$, e) => {
+    statuses.push(e.text)
+    return { value: undefined }
+  })
+
+  await $.prompt.submit({ text: 'hi', wait: false, origin: { kind: 'composer' } })
+
+  expect(read.at(-1)).toBe('/repo/BACKLOG.md')
+  expect(statuses.at(-1)).toBe('backlog · 1 to-do')
+  const report = await $.tool.call({ tool: 'mcp__backlog__backlog' })
+  expect(report.result).toContain('Main')
 })

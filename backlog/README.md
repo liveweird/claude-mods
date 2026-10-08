@@ -1,6 +1,6 @@
 # backlog
 
-A Claude Code mod that summarises the working directory's `BACKLOG.md`: what's next, and how many items are to-do, new
+A Claude Code mod that summarises the repository's `BACKLOG.md`: what's next, and how many items are to-do, new
 (proposed, not yet confirmed), parked or blocked.
 
 - Status line: `backlog · next: Real-Jira first sync · 9 to-do · 2 new · 3 parked/blocked`
@@ -9,6 +9,10 @@ A Claude Code mod that summarises the working directory's `BACKLOG.md`: what's n
 
 It refreshes at session start, on every prompt (so a `git pull` shows), after an Edit or Write to `BACKLOG.md`, on a
 working-directory change and on `/backlog`. A repo without `BACKLOG.md`, or with no tagged items, shows nothing.
+
+It always reads the **main checkout's** `BACKLOG.md` (via `git rev-parse --git-common-dir`), so a session working in a
+linked worktree, such as `.claude/worktrees/<name>`, still shows the trunk's backlog, not the worktree's copy. Outside a
+git repo it reads the working directory's file.
 
 ## The convention
 
