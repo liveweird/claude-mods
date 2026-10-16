@@ -170,7 +170,7 @@ export const register: Register = on => {
         <Text wrap="truncate-end" dimColor>
           {statusLine(p, now)}
         </Text>
-        {below}
+        {below.type === 'engine' ? null : below}
       </Box>
     )
   })

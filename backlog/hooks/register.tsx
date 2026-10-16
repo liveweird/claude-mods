@@ -79,6 +79,9 @@ export const register: Register = on => {
         <Text color={LAVENDER}>{tail}</Text>
       </Text>
     )
+    // The engine's own placeholder (`{ type: 'engine' }`, nothing to draw) can't be nested in a tree: embed only a
+    // drawing another plugin made.
+    if (below.type === 'engine') return row
     return (
       <Box flexDirection="column">
         {row}
