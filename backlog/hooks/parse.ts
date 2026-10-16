@@ -65,31 +65,13 @@ export function summarize(backlog: Backlog): Summary {
 }
 
 /** The non-zero counts, parked and blocked together: `9 to-do · 2 new · 3 parked/blocked`. */
-function counts(sum: Summary): string[] {
+export function counts(sum: Summary): string[] {
   const held = sum.byStatus.parked.length + sum.byStatus.blocked.length
   return [
     sum.byStatus.todo.length ? `${sum.byStatus.todo.length} to-do` : '',
     sum.byStatus.new.length ? `${sum.byStatus.new.length} new` : '',
     held ? `${held} parked/blocked` : '',
   ].filter(Boolean)
-}
-
-const MIN_TITLE = 12
-
-/** The status-line entry; undefined without a tagged backlog, so other repos stay quiet. */
-export function statusText(sum: Summary, maxLen = 80): string | undefined {
-  if (!sum.found || sum.tagged === 0) return undefined
-  const tail = counts(sum).map(c => ` · ${c}`).join('')
-  const first = sum.next[0]
-  if (first === undefined) return `backlog${tail}`.slice(0, maxLen)
-  const more = sum.next.length > 1 ? ` +${sum.next.length - 1}` : ''
-  const room = maxLen - `backlog · next: ${more}${tail}`.length
-  if (room < MIN_TITLE) return `backlog · next: ${clip(first.title, maxLen - 16)}`
-  return `backlog · next: ${clip(first.title, room)}${more}${tail}`
-}
-
-function clip(text: string, max: number): string {
-  return text.length > max ? `${text.slice(0, Math.max(max - 1, 0))}…` : text
 }
 
 export const LABELS: Record<Status, string> = { next: 'Next', todo: 'To-do', new: 'New', parked: 'Parked', blocked: 'Blocked' }
@@ -109,3 +91,11 @@ export function reportText(sum: Summary): string {
   if (sum.untagged > 0) lines.push(`Untagged: ${sum.untagged}`)
   return lines.join('\n')
 }
+
+/**
+ * The mod's two purple shades: a deeper violet for what to look at (the label, what's next, a heading) and a light
+ * lavender for the rest. Mid-tone raw colours, so both read on a dark and a light terminal; no theme key is purple,
+ * and the theme's `warning` (yellow) made every parked or blocked item look like an alarm.
+ */
+export const VIOLET = '#8b5cf6'
+export const LAVENDER = '#a78bfa'

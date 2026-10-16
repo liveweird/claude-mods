@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import { EMPTY, LABELS, STATUSES, parseBacklog, reportText, statusText, summarize } from './parse'
+import { EMPTY, LABELS, LAVENDER, STATUSES, VIOLET, counts, parseBacklog, reportText, summarize } from './parse'
 
 const PANE = 'backlog'
 const FILE = 'BACKLOG.md'
@@ -17,6 +17,8 @@ export const register: Register = on => {
         "Read-only: the working directory's BACKLOG.md by status tag ([next], [todo], [new], [parked], [blocked]), each item's title and section, and the untagged count.",
       inputSchema: { type: 'object', properties: {} },
     })
+    // 0.3.0 draws a band above the prompt instead; clear a line an older load pinned.
+    $.ui.status(undefined)
     await refresh($)
 
     return next(e)
@@ -50,6 +52,41 @@ export const register: Register = on => {
     return { text: 'Backlog pane opened.' }
   })
 
+  // One row above the prompt, in the two purple shades. It stacks with any band drawn beneath (e.g. plan-progress)
+  // rather than replacing it, and yields to a survey.
+  on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
+    const below = await next(e)
+    const sum = summarize(await read($, backlog))
+    if (e.props.hasSurvey || !sum.found || sum.tagged === 0) return below
+
+    const { Box, Text } = $.ui.resolve(e)
+    const first = sum.next[0]
+    const tail = counts(sum).map(c => ` · ${c}`).join('')
+    const row = (
+      <Text wrap="truncate-end">
+        <Text color={VIOLET} bold>
+          backlog
+        </Text>
+        {first === undefined ? null : (
+          <Text>
+            <Text color={LAVENDER}> · next: </Text>
+            <Text color={VIOLET} bold>
+              {first.title}
+            </Text>
+            {sum.next.length > 1 ? <Text color={LAVENDER}> +{sum.next.length - 1}</Text> : null}
+          </Text>
+        )}
+        <Text color={LAVENDER}>{tail}</Text>
+      </Text>
+    )
+    return (
+      <Box flexDirection="column">
+        {row}
+        {below}
+      </Box>
+    )
+  })
+
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     const { Box, Text } = $.ui.resolve(e)
     const sum = summarize(await read($, backlog))
@@ -62,7 +99,7 @@ export const register: Register = on => {
           const held = status === 'parked' || status === 'blocked'
           return (
             <Box flexDirection="column" marginBottom={1}>
-              <Text bold color={status === 'next' ? 'success' : held ? 'warning' : undefined}>
+              <Text bold color={status === 'next' ? VIOLET : held ? undefined : LAVENDER} dimColor={held}>
                 {LABELS[status]} {items.length}
               </Text>
               {items.map(i => (
@@ -75,7 +112,7 @@ export const register: Register = on => {
             </Box>
           )
         })}
-        {sum.untagged > 0 ? <Text color="warning">Untagged: {sum.untagged}</Text> : null}
+        {sum.untagged > 0 ? <Text color={LAVENDER}>Untagged: {sum.untagged}</Text> : null}
       </Box>
     )
   })
@@ -99,7 +136,7 @@ async function backlogPath($: EngineInterface): Promise<string> {
 async function refresh($: EngineInterface) {
   const text = await $.fs.read(await backlogPath($)).catch(() => undefined)
   const parsed = text === undefined ? EMPTY : parseBacklog(text)
+  // The band reads the atom, so the write redraws it.
   await update($, backlog, () => parsed)
-  $.ui.status(statusText(summarize(parsed)))
   return parsed
 }

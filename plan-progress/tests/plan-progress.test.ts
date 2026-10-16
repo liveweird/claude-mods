@@ -47,6 +47,8 @@ test('the timeline fills exactly the width it is given', () => {
 
 test('the tool drives the band on every surface', async ($, on) => {
   const clock = mock.clock(on, { now: Date.UTC(2026, 9, 7, 10, 0) })
+  // Beneath the band: an empty one, standing in for the engine's (or another plugin's).
+  on('ui.render', () => ({ type: 'Box' as const }))
   const started = await $.tool.call({
     tool: TOOL,
     action: 'start',
@@ -81,6 +83,8 @@ test('the tool drives the band on every surface', async ($, on) => {
 
 test('the running step is blue and later steps are dim grey', async ($, on) => {
   const clock = mock.clock(on, { now: 0 })
+  // Beneath the band: an empty one, standing in for the engine's (or another plugin's).
+  on('ui.render', () => ({ type: 'Box' as const }))
   await $.tool.call({
     tool: TOOL,
     action: 'start',

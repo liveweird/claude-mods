@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-import { parseBacklog, reportText, statusText, summarize, titleOf } from '../hooks/parse'
+import { LAVENDER, VIOLET, counts, parseBacklog, reportText, summarize, titleOf } from '../hooks/parse'
 
 const MD = [
   '# Product backlog',
@@ -48,17 +48,9 @@ test('the parser reads tagged top-level items under sections only', () => {
   expect(titleOf('x'.repeat(80))).toHaveLength(60)
 })
 
-test('the status line shows the first next item and the non-zero counts, within its length', () => {
-  const sum = summarize(parseBacklog(MD))
-  expect(statusText(sum)).toBe('backlog · next: Real-Jira first sync · 2 to-do · 1 new · 2 parked/blocked')
-  const short = statusText(sum, 60) ?? ''
-  expect(short.length).toBeLessThanOrEqual(60)
-  expect(short.startsWith('backlog · next: Real-Jira')).toBe(true)
-  expect(statusText(summarize(parseBacklog('## A\n- [todo] **One.**\n- [new] Two')))).toBe('backlog · 1 to-do · 1 new')
-  expect(statusText(summarize(parseBacklog('## A\n- [next] **One.**\n- [next] **Two.**')))).toBe('backlog · next: One +1')
-  expect(statusText(summarize(parseBacklog('## A\n- untagged')))).toBeUndefined()
-  expect(statusText(summarize({ found: false, items: [], untagged: 0 }))).toBeUndefined()
-  expect(statusText(summarize(parseBacklog('')))).toBeUndefined()
+test('the counts are the non-zero to-do, new and parked/blocked figures', () => {
+  expect(counts(summarize(parseBacklog(MD)))).toEqual(['2 to-do', '1 new', '2 parked/blocked'])
+  expect(counts(summarize(parseBacklog('## A\n- [next] **One.**')))).toEqual([])
 })
 
 test('the report lists every status with titles and sections', () => {
@@ -69,9 +61,20 @@ test('the report lists every status with titles and sections', () => {
   expect(reportText(summarize({ found: false, items: [], untagged: 0 }))).toBe('No BACKLOG.md in the working directory.')
 })
 
+/** The colours of the Texts that draw `text` (a nested run's parent draws it too, uncoloured). */
+async function coloured(ui: { findAll: (q: { type: string; text: string }) => Promise<{ props: Record<string, unknown> }[]> }, text: string) {
+  return (await ui.findAll({ type: 'Text', text })).map(t => t.props.color).filter(c => c !== undefined)
+}
+
+const BAND = {
+  plugin: 'backlog',
+  component: 'AbovePrompt',
+  props: { hasSurvey: false, isWorking: false, maxRows: 10, bodyColumns: 100, scroll: { offset: 0, bodyRows: 10 }, view: {} },
+} as const
+
 const RUN = { stderr: '', isStdoutTruncated: false, isStderrTruncated: false }
 
-test('the status line, the tool and the pane follow BACKLOG.md', async ($, on) => {
+test('the band, the tool and the pane follow BACKLOG.md, in purple and never in the warning colour', async ($, on) => {
   let file: string | undefined = MD
   // Not a git repo: the working directory's BACKLOG.md.
   on('process.run', () => ({ value: { ...RUN, exitCode: 128, stdout: '' } }))
@@ -79,14 +82,16 @@ test('the status line, the tool and the pane follow BACKLOG.md', async ($, on) =
     return e.path.endsWith('/BACKLOG.md') && file !== undefined ? { value: file } : { deny: 'ENOENT' }
   })
   on('prompt.submit', (_$, e) => ({ text: e.text }))
-  const statuses: (string | undefined)[] = []
-  on('ui.status', (_$, e) => {
-    statuses.push(e.text)
-    return { value: undefined }
-  })
+  on('ui.status', () => ({ value: undefined }))
+  // Beneath the band: an empty one, standing in for the engine's (or another plugin's).
+  on('ui.render', () => ({ type: 'Box' as const }))
 
   await $.prompt.submit({ text: 'hi', wait: false, origin: { kind: 'composer' } })
-  expect(statuses.at(-1)).toBe('backlog · next: Real-Jira first sync · 2 to-do · 1 new · 2 parked/blocked')
+  const band = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  expect(await coloured(band, 'backlog')).toEqual([VIOLET])
+  expect(await coloured(band, 'Real-Jira first sync')).toEqual([VIOLET])
+  expect(await coloured(band, ' · 2 to-do · 1 new · 2 parked/blocked')).toEqual([LAVENDER])
+  await band.unmount()
 
   const report = await $.tool.call({ tool: 'mcp__backlog__backlog' })
   expect(report.result).toContain('Blocked (1):\n  - A1 — protect master (Engineering follow-ups)')
@@ -96,12 +101,15 @@ test('the status line, the tool and the pane follow BACKLOG.md', async ($, on) =
     expect(await ui.find({ type: 'Text', text: /^Next 1$/ })).toBeDefined()
     expect(await ui.find({ type: 'Text', text: /^Parked 1$/ })).toBeDefined()
     expect(await ui.find({ type: 'Text', text: /^Untagged: 1$/ })).toBeDefined()
+    expect((await ui.findAll({ type: 'Text' })).some(t => t.props.color === 'warning')).toBe(false)
     await ui.unmount()
   }
 
   file = undefined
   await $.prompt.submit({ text: 'again', wait: false, origin: { kind: 'composer' } })
-  expect(statuses.at(-1)).toBeUndefined()
+  const quiet = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  expect(await quiet.find({ type: 'Text', text: 'backlog' })).toBeUndefined()
+  await quiet.unmount()
 })
 
 test('a session in a linked worktree reads the main checkout\'s BACKLOG.md', async ($, on) => {
@@ -115,16 +123,16 @@ test('a session in a linked worktree reads the main checkout\'s BACKLOG.md', asy
     return e.path === '/repo/BACKLOG.md' ? { value: '## A\n- [todo] **Main.**' } : { value: '## A\n- [todo] **Worktree copy.**' }
   })
   on('prompt.submit', (_$, e) => ({ text: e.text }))
-  const statuses: (string | undefined)[] = []
-  on('ui.status', (_$, e) => {
-    statuses.push(e.text)
-    return { value: undefined }
-  })
+  on('ui.status', () => ({ value: undefined }))
+  // Beneath the band: an empty one, standing in for the engine's (or another plugin's).
+  on('ui.render', () => ({ type: 'Box' as const }))
 
   await $.prompt.submit({ text: 'hi', wait: false, origin: { kind: 'composer' } })
 
   expect(read.at(-1)).toBe('/repo/BACKLOG.md')
-  expect(statuses.at(-1)).toBe('backlog · 1 to-do')
+  const band = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  expect(await band.find({ type: 'Text', text: ' · 1 to-do' })).toBeDefined()
+  await band.unmount()
   const report = await $.tool.call({ tool: 'mcp__backlog__backlog' })
   expect(report.result).toContain('Main')
 })

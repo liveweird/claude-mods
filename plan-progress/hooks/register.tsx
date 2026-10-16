@@ -139,11 +139,13 @@ export const register: Register = on => {
     return { text: 'Plan progress pane opened.' }
   })
 
+  // Stacks on top of whatever band is drawn beneath (e.g. the backlog row) rather than replacing it.
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
+    const below = await next(e)
     const p = await read($, plan)
-    if (e.props.hasSurvey || p === null) return next(e)
+    if (e.props.hasSurvey || p === null) return below
     const now = await $.clock.now()
-    if (p.finishedAt !== undefined && now - p.finishedAt > LINGER_MS) return next(e)
+    if (p.finishedAt !== undefined && now - p.finishedAt > LINGER_MS) return below
 
     const { Box, Text } = $.ui.resolve(e)
     const width = Math.max(10, e.props.bodyColumns)
@@ -168,6 +170,7 @@ export const register: Register = on => {
         <Text wrap="truncate-end" dimColor>
           {statusLine(p, now)}
         </Text>
+        {below}
       </Box>
     )
   })

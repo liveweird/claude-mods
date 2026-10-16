@@ -3,8 +3,11 @@
 A Claude Code mod that summarises the repository's `BACKLOG.md`: what's next, and how many items are to-do, new
 (proposed, not yet confirmed), parked or blocked.
 
-- Status line: `backlog · next: Real-Jira first sync · 9 to-do · 2 new · 3 parked/blocked`
+- A one-row band above the prompt: `backlog · next: Real-Jira first sync · 9 to-do · 2 new · 3 parked/blocked`, in two
+  purple shades (violet for the label and what's next, lavender for the counts). It stacks with other bands, such as
+  plan-progress, rather than replacing them. (A status-line entry can't take a colour of its own, hence the band.)
 - `/backlog` opens a pane: each status with its items' titles and the `##` section they sit under, plus an untagged count.
+  Next is violet, to-do and new lavender, parked and blocked dimmed — nothing in the warning colour.
 - `backlog`: a read-only tool, so Claude can answer "what's next?" without reading the file.
 
 It refreshes at session start, on every prompt (so a `git pull` shows), after an Edit or Write to `BACKLOG.md`, on a
