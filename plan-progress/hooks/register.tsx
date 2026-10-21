@@ -11,6 +11,7 @@ import {
   type Segment,
   startPlan,
   stepDurationMs,
+  stepsProblem,
   type StepInput,
   summarize,
   timeline,
@@ -88,12 +89,14 @@ export const register: Register = on => {
     const now = await $.clock.now()
     const current = await read($, plan)
     const steps = Array.isArray(e.steps) ? (e.steps as StepInput[]) : undefined
+    const stepsError = steps ? stepsProblem(steps) : undefined
     const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? Math.round(v) : undefined)
     let nextPlan: Plan | null = current
 
     switch (e.action) {
       case 'start':
         if (!steps?.length) return { result: 'start needs a non-empty steps list.', isError: true }
+        if (stepsError) return { result: stepsError, isError: true }
         nextPlan = startPlan(typeof e.title === 'string' && e.title.trim() ? e.title.trim() : 'Plan', steps, now)
         break
       case 'step': {
@@ -108,6 +111,7 @@ export const register: Register = on => {
       case 'revise': {
         if (current === null) return { result: 'No plan is running; call start first.', isError: true }
         if (!steps) return { result: 'revise needs steps.', isError: true }
+        if (stepsError) return { result: stepsError, isError: true }
         const from = num(e.from)
         nextPlan = revise(current, steps, from === undefined ? undefined : from - 1, now)
         if (typeof e.title === 'string' && e.title.trim()) nextPlan = { ...nextPlan, title: e.title.trim() }

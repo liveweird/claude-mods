@@ -4,6 +4,26 @@ export type StepInput = { title: string; estimateMin: number }
 
 const MINUTE = 60_000
 
+/**
+ * Why the steps list is not `{ title, estimateMin }[]`, or undefined when it is. The engine does not enforce the
+ * schema's `required`, and a misspelt key (`estimate_minutes`) used to land as a silent 0-minute estimate.
+ */
+export function stepsProblem(steps: unknown[]): string | undefined {
+  const problems = steps.flatMap((s, i) => {
+    if (typeof s !== 'object' || s === null || Array.isArray(s)) return [`step ${i + 1} is not an object`]
+    const step = s as Record<string, unknown>
+    const out: string[] = []
+    if (typeof step.title !== 'string' || !step.title.trim()) out.push(`step ${i + 1} needs a non-empty "title"`)
+    if (typeof step.estimateMin !== 'number' || !Number.isFinite(step.estimateMin) || step.estimateMin < 0) {
+      const others = Object.keys(step).filter(k => k !== 'title')
+      const got = 'estimateMin' in step ? `got ${JSON.stringify(step.estimateMin)}` : `got keys: ${others.join(', ') || 'none'}`
+      out.push(`step ${i + 1} needs "estimateMin", a number of minutes >= 0 (${got})`)
+    }
+    return out
+  })
+  return problems.length ? `Invalid steps: ${problems.join('; ')}.` : undefined
+}
+
 export function startPlan(title: string, steps: StepInput[], now: number): Plan {
   return {
     title,

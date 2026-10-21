@@ -31,6 +31,8 @@ Claude reports progress through the `plan_progress` tool the mod registers (`sta
 - `/plan-progress` opens a pane with the timeline and one row per step.
 - `/plan-progress clear` drops the plan.
 
+Each step is `{ title, estimateMin }`. A `start` or `revise` whose step lacks a numeric `estimateMin` (or a title) is refused with an error naming the step and the keys it got, so a misspelt key never shows as a 0-minute estimate.
+
 A finished plan stays on the band for ten minutes, then leaves it.
 
 ## Develop

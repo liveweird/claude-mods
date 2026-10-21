@@ -105,3 +105,30 @@ test('the running step is blue and later steps are dim grey', async ($, on) => {
   expect(label).toMatchObject({ text: 'step 2/3: Two', props: { color: 'suggestion' } })
   await ui.unmount()
 })
+
+test('a step without a numeric estimateMin is rejected, not read as 0 minutes', async ($, on) => {
+  mock.clock(on, { now: 0 })
+  const bad = await $.tool.call({
+    tool: TOOL,
+    action: 'start',
+    title: 'Typo',
+    steps: [{ title: 'A', estimate_minutes: 15 }, { title: 'B', estimateMin: 5 }],
+  })
+  expect(bad.isError).toBe(true)
+  expect(String(bad.result)).toContain('step 1 needs "estimateMin"')
+  expect(String(bad.result)).toContain('got keys: estimate_minutes')
+  const none = await $.tool.call({ tool: TOOL, action: 'show' })
+  expect(String(none.result)).not.toContain('Typo')
+
+  await $.tool.call({ tool: TOOL, action: 'start', title: 'Real', steps: [{ title: 'A', estimateMin: 10 }] })
+  const badRevise = await $.tool.call({
+    tool: TOOL,
+    action: 'revise',
+    steps: [{ title: 'A', estimateMin: '10' }, { title: '', estimateMin: 3 }],
+  })
+  expect(badRevise.isError).toBe(true)
+  expect(String(badRevise.result)).toContain('step 1 needs "estimateMin", a number of minutes >= 0 (got "10")')
+  expect(String(badRevise.result)).toContain('step 2 needs a non-empty "title"')
+  const kept = await $.tool.call({ tool: TOOL, action: 'show' })
+  expect(String(kept.result)).toContain('est 10m')
+})
