@@ -63,9 +63,12 @@ export function summarize(calls: Record<string, Invocation>): Summary {
   return { rows, ...total, pct: pct(total.hits, total.calls) }
 }
 
-/** The status-line entry; undefined until the first hit, so a clean session stays quiet. */
+/**
+ * The status-line entry under the prompt: undefined until the first agent invocation, then the running tally even
+ * with no hit yet (`turn limits 0/12 (0%)`), so the line is visibly there rather than appearing only on a hit.
+ */
 export function statusText(sum: Summary, maxLen = 80): string | undefined {
-  if (sum.hits === 0) return undefined
+  if (sum.calls === 0) return undefined
   let text = `turn limits ${sum.hits}/${sum.calls} (${sum.pct}%)`
   const hit = [...sum.rows].filter(r => r.hits > 0).sort((a, b) => b.hits - a.hits || a.type.localeCompare(b.type))
   for (const [i, r] of hit.entries()) {

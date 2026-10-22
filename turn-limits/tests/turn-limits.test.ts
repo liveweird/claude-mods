@@ -47,7 +47,8 @@ test('summary counts per type, sorts by rate and keeps the status line short', (
     ['reviewer', 0, 1, 0],
   ])
   expect(statusText(sum)).toBe('turn limits 2/5 (40%) · implementer 1 · scout 1')
-  expect(statusText(summarize({ x: { type: 'scout' } }))).toBeUndefined()
+  expect(statusText(summarize({ x: { type: 'scout' } }))).toBe('turn limits 0/1 (0%)')
+  expect(statusText(summarize({}))).toBeUndefined()
   expect(reportText(sum)).toContain('  scout: 1/3 (33%), limit 25')
   expect((statusText(sum, 30) ?? '').length).toBeLessThanOrEqual(30)
 })

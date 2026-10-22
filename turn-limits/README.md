@@ -3,7 +3,7 @@
 A Claude Code mod that counts, per agent type, the agent invocations of the current session that stopped at their
 turn limit (`maxTurns`), and what share of that type's invocations they are.
 
-- Status line, once there is a hit: `turn limits 3/21 (14%) · scout 2 · implementer 1`
+- Status line under the prompt, from the first agent invocation: `turn limits 0/12 (0%)`, then with hits `turn limits 3/21 (14%) · scout 2 · implementer 1`
 - `/turn-limits` opens a pane: one row per agent type, `hits/runs`, `%`, and the limits seen.
 - `/turn-limits reset` zeroes the counters.
 - `turn_limits`: a read-only tool, so Claude can report the numbers.
